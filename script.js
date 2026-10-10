@@ -54,7 +54,8 @@ function agregarCamposProducto(sku = '', desc = '', cant = 1) {
 }
 
 window.eliminarCamposProducto = function(id) {
-    document.getElementById(`prod-form-${id}`).remove();
+    const el = document.getElementById(`prod-form-${id}`);
+    if (el) el.remove();
 }
 
 // Inicializar con un campo de producto vacío
@@ -175,7 +176,7 @@ function renderHistorial(filtro = '') {
             
             <div class="info-line" style="margin-top: 8px;">
                 <span>CNTRL:</span>
-                <select class="status-select-inline" onchange="cambiarEstatusPago(${ticket.id}, this.value)" style="color:${colorPago}; border-color:${colorPago}; font-weight:bold; margin:0; padding:4px 8px; width:auto; display:inline-block; height:auto;">
+                <select class="status-select-inline" onchange="cambiarEstatusPago(${ticket.id}, this.value)" style="color:${colorPago}; border-color:${colorPago}; font-weight:bold; margin:0; padding:4px;">
                     <option value="Pendiente" ${ticket.pago === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
                     <option value="PAGADO" ${ticket.pago === 'PAGADO' ? 'selected' : ''}>PAGADO</option>
                     <option value="Contra Entrega" ${ticket.pago === 'Contra Entrega' ? 'selected' : ''}>Contra Entrega</option>
@@ -226,24 +227,23 @@ window.imprimirTicket = function(id) {
             <div class="divider"></div>
             ${ticket.domicilio ? `<p style="font-size: 11px;"><strong>DOM:</strong> ${ticket.domicilio}</p>` : ''}
             ${ticket.telefono ? `<p style="font-size: 11px;"><strong>TEL:</strong> ${ticket.telefono}</p>` : ''}
-${ticket.referencias ? <p style="font-size: 11px;"><strong>REF:</strong> ${ticket.referencias}</p> : ''}
-ENTREGA: ${ticket.fecha}
-PAGO: ${ticket.pago.toUpperCase()}
-${filasProductos}
-TOTAL ARTÍCULOS: ${ticket.totalPiezas}
+            ${ticket.referencias ? `<p style="font-size: 11px;"><strong>REF:</strong> ${ticket.referencias}</p>` : ''}
+            <p style="font-size: 11px;"><strong>ENTREGA:</strong> ${ticket.fecha}</p>
+            <p style="font-size: 11px;"><strong>PAGO:</strong> ${ticket.pago.toUpperCase()}</p>
+            <table style="width:100%; margin-top:6px;">
+                <tbody>
+                    ${filasProductos}
+                </tbody>
+            </table>
+            <p style="font-size: 11px; margin-top:6px;"><strong>TOTAL ARTÍCULOS:</strong> ${ticket.totalPiezas}</p>
 
+            <div style="margin-top:12px; border-top:1px dashed #000; padding-top:8px;">
+                ----------------------<br>
+                FIRMA DEL CLIENTE
+            </div>
 
-
-----------------------
-FIRMA DEL CLIENTE
-
-
-
-Gracias por su preferencia
-
-
-
-
-`;
-window.print();
+            <p style="text-align:center; font-size:11px; margin-top:10px;">Gracias por su preferencia</p>
+        </div>
+    `;
+    window.print();
 }
