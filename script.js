@@ -82,6 +82,10 @@ btnGuardar.addEventListener('click', () => {
         totalPiezas += cant;
     });
 
+    // Formatear estampa de tiempo exacta de guardado
+    const ahora = new Date();
+    const timestampStr = ahora.toLocaleDateString('es-MX') + ', ' + ahora.toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+
     const nuevoPedido = {
         id: Date.now(),
         nombre: nombre,
@@ -92,13 +96,15 @@ btnGuardar.addEventListener('click', () => {
         fecha: document.getElementById('ped-fecha').value,
         pago: document.getElementById('ped-pago').value,
         totalPiezas: totalPiezas,
-        productos: productos
+        productos: productos,
+        registroTime: timestampStr
     };
 
-    BD_TICKETS.unshift(nuevoPedido);
+    BD_TICKETS.unshift(nuevoPedido); 
     localStorage.setItem('tickets_data', JSON.stringify(BD_TICKETS));
 
     alert("Pedido guardado exitosamente");
+    
     limpiarFormulario();
     tabGuardados.click();
 });
@@ -114,13 +120,12 @@ function limpiarFormulario() {
     agregarCamposProducto();
 }
 
-// Cambiar estatus de pago desde la tarjeta guardada
-window.cambiarEstatusPago = function(id, nuevoEstatus) {
+// Cambiar estatus de pago directamente desde el historial
+function cambiarEstatusPago(id, nuevoEstatus) {
     const index = BD_TICKETS.findIndex(t => t.id === id);
     if (index !== -1) {
         BD_TICKETS[index].pago = nuevoEstatus;
         localStorage.setItem('tickets_data', JSON.stringify(BD_TICKETS));
-        renderHistorial(filtroFecha.value);
     }
 }
 
@@ -146,7 +151,7 @@ function renderHistorial(filtro = '') {
         ticket.productos.forEach(p => {
             filasProd += `
                 <tr>
-                    <td><strong>${p.sku}</strong> • ${p.desc}</td>
+                    <td>${p.sku} • ${p.desc}</td>
                     <td class="td-der">x${p.cant}</td>
                 </tr>
             `;
@@ -154,11 +159,7 @@ function renderHistorial(filtro = '') {
 
         const opciones = { day: 'numeric', month: 'short' };
         const fechaVisual = new Date(ticket.fecha + 'T00:00:00').toLocaleDateString('es-MX', opciones);
-
-        // Estilos de colores dinámicos para la pantalla
-        let colorPago = '#e03131'; 
-        if(ticket.pago === 'PAGADO') colorPago = '#2b8a3e';
-        if(ticket.pago === 'Contra Entrega') colorPago = '#f59f00';
+        const colorPago = ticket.pago === 'PAGADO' ? '#2b8a3e' : (ticket.pago === 'Pendiente' ? '#e03131' : '#f59f00');
 
         tarjeta.innerHTML = `
             <div class="ticket-header-info">
@@ -166,18 +167,18 @@ function renderHistorial(filtro = '') {
                     <h4>${ticket.nombre}</h4>
                     <span style="font-size:12px; color:#777;">${ticket.colonia || 'Sin Colonia'}</span>
                 </div>
-                <div class="tot-piezas"><strong>${ticket.totalPiezas} pzs</strong></div>
+                <div class="tot-piezas">${ticket.totalPiezas} pzs</div>
             </div>
             ${ticket.domicilio ? `<div class="info-line">📍 ${ticket.domicilio}</div>` : ''}
             ${ticket.telefono ? `<div class="info-line">📞 ${ticket.telefono}</div>` : ''}
+            ${ticket.referencias ? `<div class="info-line" style="font-size:11px; color:#777;">📝 Ref: ${ticket.referencias}</div>` : ''}
             <div class="info-line">📅 Entrega: ${fechaVisual}</div>
-            
-            <div class="info-line" style="margin-top: 8px;">
-                <span>💳 Pago:</span>
-                <select class="select-pago-historial" onchange="cambiarEstatusPago(${ticket.id}, this.value)" style="color:${colorPago}; font-weight:bold; margin:0; padding:4px 8px; width:auto; display:inline-block; height:auto;">
+            <div class="info-line">
+                CNTRL: 
+                <select class="status-select-inline" style="color: ${colorPago}; border-color: ${colorPago};" onchange="cambiarEstatusPago(${ticket.id}, this.value); this.style.color = this.value === 'PAGADO' ? '#2b8a3e' : (this.value === 'Pendiente' ? '#e03131' : '#f59f00'); this.style.borderColor = this.style.color;">
                     <option value="Pendiente" ${ticket.pago === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
                     <option value="PAGADO" ${ticket.pago === 'PAGADO' ? 'selected' : ''}>PAGADO</option>
-                    <option value="Contra Entrega" ${ticket.pago === 'Contra Entrega' ? 'selected' : ''}>Contra Entrega</option>
+                    <option value="Pago contra entrega" ${ticket.pago === 'Pago contra entrega' ? 'selected' : ''}>Pago contra entrega</option>
                 </select>
             </div>
             
@@ -198,37 +199,67 @@ btnLimpiarFiltro.addEventListener('click', () => {
     renderHistorial();
 });
 
-// Acción de Impresión Física (Corregido y con fuentes negritas/grandes para 58mm)
-window.imprimirTicket = function(id) {
+// Acción de Impresión Física Estilo Imagen 2 Exclusivo
+function imprimirTicket(id) {
     const ticket = BD_TICKETS.find(t => t.id === id);
     if (!ticket) return;
 
-    let filasProductos = '';
+    // Generar formato de productos estructurado en bloques nítidos
+    let bloquesProductos = '';
     ticket.productos.forEach(p => {
-        filasProductos += `
-            <tr>
-                <td style="padding: 3px 0;"><strong>${p.sku}</strong><br>${p.desc}</td>
-                <td style="text-align: right; width: 45px; padding: 3px 0; font-size: 13px;"><strong>x${p.cant}</strong></td>
-            </tr>
+        bloquesProductos += `
+            <div class="prod-block-print">
+                <div>${p.sku} ${p.desc}</div>
+                <div>CANT: ${p.cant}</div>
+            </div>
         `;
     });
 
+    // Formatear Fecha en formato DD/MM/AAAA para la cabecera
+    const parts = ticket.fecha.split('-');
+    const fechaEspanol = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : ticket.fecha;
+
+    // Construcción del documento final idéntico al ejemplo físico
     ticketImpresion.innerHTML = `
-        <div class="ticket-print-layout">
-            <h2 style="font-size: 14px; font-weight: 900; margin-bottom: 2px;">${ticket.nombre}</h2>
-            <p style="text-align: center; font-size: 11px; font-weight: 700;">${ticket.colonia ? ticket.colonia.toUpperCase() : ''}</p>
-            <div class="divider"></div>
-            ${ticket.domicilio ? `<p style="font-size: 11px;"><strong>DOM:</strong> ${ticket.domicilio}</p>` : ''}
-            ${ticket.telefono ? `<p style="font-size: 11px;"><strong>TEL:</strong> ${ticket.telefono}</p>` : ''}
-            <p style="font-size: 11px;"><strong>ENTREGA:</strong> ${ticket.fecha}</p>
-            <p style="font-size: 11px;"><strong>PAGO:</strong> ${ticket.pago.toUpperCase()}</p>
-            <div class="divider"></div>
-            <table class="table-print">
-                <tbody>${filasProductos}</tbody>
-            </table>
-            <div class="divider"></div>
-            <p style="text-align: right; font-size: 12px; font-weight: 900; margin-top: 5px;">TOTAL ARTÍCULOS: ${ticket.totalPiezas}</p>
-            <br>
+        <div class="t-center t-title">PEDIDO</div>
+        <div class="char-divider">======================</div>
+        <div class="t-center text-sub">======</div>
+        
+        <div class="ticket-section-data">
+            <span class="ticket-label">CLIENTE</span>
+            <span class="ticket-value">${ticket.nombre}</span>
+            
+            ${ticket.domicilio ? `
+                <span class="ticket-label">DOMICILIO</span>
+                <span class="ticket-value">${ticket.domicilio}</span>
+            ` : ''}
+            
+            ${ticket.colonia ? `
+                <span class="ticket-label">COL:</span>
+${ticket.colonia}
+` : ''}
+${ticket.telefono ? <span class="ticket-label">TEL:</span> <span class="ticket-value">${ticket.telefono}</span> : ''}
+${ticket.referencias ? <span class="ticket-label">REFERENCIAS</span> <span class="ticket-value">${ticket.referencias}</span> : ''}
+ENTREGA:
+${fechaEspanol}
+PAGO:
+${ticket.pago}
+----------------------
+======
+PRODUCTOS
+----------------------
+======
+${bloquesProductos}
+======================
+======
+----------------------
+FIRMA DEL CLIENTE
+Pedido registrado el
+${ticket.registroTime || fechaEspanol}
+
+
+
+
 `;
 window.print();
 }
