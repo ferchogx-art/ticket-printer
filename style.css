@@ -142,7 +142,7 @@ input, select, textarea {
     gap: 20px;
 }
 
-/* DISEÑO TARJETA VISTA PREVIA (Estilo Imagen 3) */
+/* DISEÑO TARJETA VISTA PREVIA EN PANTALLA */
 .ticket-card {
     background: white;
     border: 1px solid var(--border-color);
@@ -160,7 +160,18 @@ input, select, textarea {
 .ticket-header-info h4 { margin: 0; font-size: 16px; text-transform: uppercase; }
 .tot-piezas { color: #666; font-size: 13px; }
 
-.info-line { font-size: 13px; color: #555; margin: 4px 0; display: flex; align-items: center; gap: 5px; }
+.info-line { font-size: 13px; color: #555; margin: 6px 0; display: flex; align-items: center; gap: 5px; }
+
+.status-select-inline {
+    width: auto;
+    display: inline-block;
+    padding: 3px 24px 3px 8px;
+    margin: 0;
+    font-size: 13px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+}
 
 .tabla-productos {
     width: 100%;
@@ -187,7 +198,9 @@ input, select, textarea {
     gap: 8px;
 }
 
-/* REGLAS MÁGICAS PARA IMPRESIÓN (58mm) */
+/* =========================================================
+   REGLAS EXCLUSIVAS DE IMPRESIÓN (MÁXIMA NITIDEZ - ESTILO IMAGEN 2)
+   ========================================================= */
 .print-only { display: none; }
 
 @media print {
@@ -201,18 +214,64 @@ input, select, textarea {
     }
     
     #ticket-impresion {
-        width: 52mm;
+        width: 48mm; /* Ajustado perfectamente para evitar desbordes */
         margin: 0;
-        padding: 0 1mm;
-        font-family: 'Courier New', Courier, monospace;
-        color: #000;
-        font-weight: 700; /* Hace que todo el texto sea negrita */
+        padding: 0;
+        /* Forzamos Courier New en negrita gruesa para impresión térmica impecable */
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 13px !important; 
+        font-weight: bold !important;
+        color: #000 !important;
+        line-height: 1.3 !important;
+        text-transform: uppercase !important; /* Todo a mayúsculas automáticamente */
     }
     
-    .ticket-print-layout h2 { font-size: 14px; text-align: center; margin: 5px 0; font-weight: 900; }
-    .ticket-print-layout p { margin: 4px 0; line-height: 1.2; font-weight: 700; }
-    .divider { border-top: 2px dashed #000; margin: 8px 0; } /* Línea divisoria más marcada */
+    .t-center { text-align: center; font-weight: bold; }
+    .t-bold { font-weight: bold; }
     
-    .table-print { width: 100%; border-collapse: collapse; font-size: 11px; font-weight: 700; }
-    .table-print td { padding: 4px 0; vertical-align: top; }
+    /* Títulos grandes estilo imagen ejemplo */
+    .t-title {
+        font-size: 14px !important;
+        font-weight: bold !important;
+        letter-spacing: 1px;
+        margin: 4px 0;
+    }
+    
+    .ticket-section-data {
+        margin: 6px 0;
+    }
+    
+    .ticket-label {
+        font-size: 12px !important;
+        font-weight: bold !important;
+        margin-top: 4px;
+        display: block;
+    }
+    
+    .ticket-value {
+        font-size: 13px !important;
+        font-weight: bold !important;
+        margin-bottom: 4px;
+        display: block;
+        padding-left: 2px;
+    }
+    
+    /* Separadores de caracteres térmicos puros */
+    .char-divider {
+        font-size: 13px !important;
+        font-weight: bold !important;
+        text-align: center;
+        margin: 3px 0;
+        letter-spacing: -1px;
+    }
+    
+    /* Bloques de productos robustos */
+    .prod-block-print {
+        margin: 8px 0;
+        border-bottom: 2px solid #000; /* Línea negra sólida entre productos */
+        padding-bottom: 6px;
+    }
+    .prod-block-print:last-child {
+        border-bottom: none;
+    }
 }
