@@ -167,9 +167,9 @@ function renderHistorial(filtro = '') {
                 </div>
                 <div class="tot-piezas">${ticket.totalPiezas} pzs</div>
             </div>
-            ${ticket.domicilio ? `<div class="info-line">📍 ${ticket.domicilio}</div>` : ''}
-            ${ticket.telefono ? `<div class="info-line">📞 ${ticket.telefono}</div>` : ''}
-            ${ticket.referencias ? `<div class="info-line" style="font-size:11px; color:#777;">📝 Ref: ${ticket.referencias}</div>` : ''}
+            ${ticket.domicilio ? `<div class="info-line">📍 \${ticket.domicilio}</div>` : ''}
+            ${ticket.telefono ? `<div class="info-line">📞 \${ticket.telefono}</div>` : ''}
+            ${ticket.referencias ? `<div class="info-line" style="font-size:11px; color:#777;">📝 Ref: \${ticket.referencias}</div>` : ''}
             <div class="info-line">📅 Entrega: ${fechaVisual}</div>
             <div class="info-line">
                 CNTRL: 
@@ -196,310 +196,93 @@ btnLimpiarFiltro.addEventListener('click', () => {
     filtroFecha.value = '';
     renderHistorial();
 });
-
-// Acción de Impresión Estilo Bloques Separados (Foto de referencia)
+// Acción de Impresión Física EXACTA al formato solicitado
 window.imprimirTicket = function(id) {
     const ticket = BD_TICKETS.find(t => t.id === id);
     if (!ticket) return;
 
-    let bloquesProductos = '';
-    ticket.productos.forEach(p => {
-        bloquesProductos += `
-            <div class="block-prod-item">
-                <div class="txt-thick">${p.sku} ${p.desc}</div>
-                <div class="txt-thick">CANT: ${p.cant}</div>
+    // Generar formato de lista de productos apilados verticalmente sin tablas
+    let listaProductosEstructural = '';
+    ticket.productos.forEach((p, index) => {
+        listaProductosEstructural += `
+            <div style="margin-bottom: 8px;">
+                <div>${p.sku} ${p.desc}</div>
+                <div>CANT: ${p.cant}</div>
+                ${index < ticket.productos.length - 1 ? '<div style="border-top:1px dashed #000; margin: 4px 0; width:100%;"></div>' : ''}
             </div>
         `;
     });
 
-    const parts = ticket.fecha.split('-');
-    const fechaFormateada = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : ticket.fecha;
+    // Formatear Fecha visual DD/MM/AAAA
+    let fechaFormateada = ticket.fecha;
+    if (ticket.fecha.includes('-')) {
+        const partes = ticket.fecha.split('-');
+        fechaFormateada = `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
 
+    // Código HTML calcado al de la imagen física
     ticketImpresion.innerHTML = `
-        <div class="ticket-print-layout">
-            <div class="t-center txt-thick" style="font-size: 15px; letter-spacing: 1px;">PEDIDO</div>
-            <div class="line-divider">============================</div>
-            <div class="t-center txt-thick">======</div>
+        <div style="font-family: 'Courier New', Courier, monospace; font-size: 13px; font-weight: bold; color: #000; line-height: 1.3; text-transform: uppercase;">
+            <div style="text-align: center; font-size: 14px; margin-bottom: 2px;">PEDIDO</div>
+            <div style="text-align: center; letter-spacing: -1px; margin: 2px 0;">======================</div>
+            <div style="text-align: center; margin: 2px 0;">======</div>
             
-            <div class="data-group">
-                <div class="lbl-small">CLIENTE</div>
-                <div class="txt-thick value-big">${ticket.nombre}</div>
+            <div style="margin: 8px 0;">
+                <div style="font-size: 11px; margin-top: 4px;">CLIENTE</div>
+                <div style="margin-bottom: 4px; padding-left: 2px;">${ticket.nombre}</div>
                 
                 ${ticket.domicilio ? `
-                    <div class="lbl-small">DOMICILIO</div>
-                    <div class="txt-thick value-big">${ticket.domicilio}</div>
+                    <div style="font-size: 11px; margin-top: 4px;">DOMICILIO</div>
+                    <div style="margin-bottom: 4px; padding-left: 2px;">\${ticket.domicilio}</div>
                 ` : ''}
                 
                 ${ticket.colonia ? `
-                    <div class="lbl-small">COL:</div>
-                    <div class="txt-thick value-big">${ticket.colonia}</div>
+                    <div style="font-size: 11px; margin-top: 4px;">COL:</div>
+                    <div style="margin-bottom: 4px; padding-left: 2px;">\${ticket.colonia}</div>
                 ` : ''}
                 
                 ${ticket.telefono ? `
-                    <div class="lbl-small">TEL:</div>
-${ticket.telefono}
-` : ''}
-${ticket.referencias ? <div class="lbl-small">REFERENCIAS</div> <div class="txt-thick value-big">${ticket.referencias}</div> : ''}
-ENTREGA:
-${fechaFormateada}
-PAGO:
-${ticket.pago}
-----------------------------
-======
-PRODUCTOS
-----------------------------
-======
-${bloquesProductos}
-============================
-======
-----------------------
-FIRMA DEL CLIENTE
-Pedido registrado el
-${ticket.registroTime || fechaFormateada}
+                    <div style="font-size: 11px; margin-top: 4px;">TEL:</div>
+                    <div style="margin-bottom: 4px; padding-left: 2px;">\${ticket.telefono}</div>
+                ` : ''}
+                
+                ${ticket.referencias ? `
+                    <div style="font-size: 11px; margin-top: 4px;">REFERENCIAS</div>
+                    <div style="margin-bottom: 4px; padding-left: 2px;">\${ticket.referencias}</div>
+                ` : ''}
+                
+                <div style="font-size: 11px; margin-top: 4px;">ENTREGA:</div>
+                <div style="margin-bottom: 4px; padding-left: 2px;">${fechaFormateada}</div>
+                
+                <div style="font-size: 11px; margin-top: 4px;">PAGO:</div>
+                <div style="margin-bottom: 4px; padding-left: 2px;">${ticket.pago}</div>
+            </div>
+            
+            <div style="text-align: center; letter-spacing: -1px; margin: 2px 0;">----------------------</div>
+            <div style="text-align: center; margin: 2px 0;">======</div>
+            <div style="text-align: center; font-size: 14px; margin: 4px 0;">PRODUCTOS</div>
+            <div style="text-align: center; letter-spacing: -1px; margin: 2px 0;">----------------------</div>
+            <div style="text-align: center; margin: 2px 0;">======</div>
+            
+            <div style="margin: 8px 0;">
+                ${listaProductosEstructural}
+            </div>
+            
+            <div style="text-align: center; letter-spacing: -1px; margin: 2px 0;">======================</div>
+            <div style="text-align: center; margin: 2px 0;">======</div>
+            
+            <br>
+            <div style="text-align: center; margin-top: 10px;">
+                <div>----------------------</div>
+                <div style="font-size: 11px; margin-top: 2px;">FIRMA DEL CLIENTE</div>
+            </div>
+            
+            <div style="text-align: center; font-size: 10px; margin-top: 25px; text-transform: none;">
+                Pedido registrado el<br>${ticket.registroTime || fechaFormateada}
+            </div>
+            <br><br>
+        </div>
+    `;
 
-
-
-
-
-`;
-window.print();
-}
-#### 2. Reemplaza todo tu `style.css` con este código:
-*(Fuerza las fuentes Courier Bold de 14px que le dan la nitidez extrema a la impresora y acomoda los saltos de bloque).*
-
-```css
-/* CONFIGURACIÓN GENERAL INTERFAZ */
-:root {
-    --primary-color: #1a1a1a;
-    --bg-color: #f8f9fa;
-    --border-color: #e0e0e0;
-    --text-color: #333;
-}
-
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    margin: 0;
-    padding: 0;
-}
-
-.app-container {
-    max-width: 600px;
-    margin: 0 auto;
-    background: #fff;
-    min-height: 100vh;
-    box-shadow: 0 0 10px rgba(0,0,0,0.05);
-}
-
-header {
-    display: flex;
-    border-bottom: 2px solid var(--border-color);
-}
-
-.tab-btn {
-    flex: 1;
-    padding: 15px;
-    background: none;
-    border: none;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    color: #666;
-}
-
-.tab-btn.active {
-    color: #000;
-    border-bottom: 3px solid #000;
-    font-weight: bold;
-}
-
-.tab-content {
-    display: none;
-    padding: 20px;
-}
-
-.tab-content.active {
-    display: block;
-}
-
-.form-section {
-    margin-bottom: 25px;
-}
-
-input, select, textarea {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    box-sizing: border-box;
-    font-size: 14px;
-}
-
-.form-row {
-    display: flex;
-    gap: 10px;
-}
-.form-row > * { flex: 1; }
-
-.item-producto-form {
-    background: #fafafa;
-    border: 1px solid var(--border-color);
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    position: relative;
-}
-
-.btn-remove {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
-    border: none;
-    color: #ff4d4d;
-    cursor: pointer;
-}
-
-.btn-primary {
-    width: 100%;
-    background: var(--primary-color);
-    color: white;
-    padding: 14px;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.btn-secondary {
-    background: #fff;
-    border: 1px solid var(--border-color);
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.filter-bar {
-    background: #f1f3f5;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-.grid-historial {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.ticket-card {
-    background: white;
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 20px;
-}
-
-.ticket-header-info {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 15px;
-}
-
-.ticket-header-info h4 { margin: 0; text-transform: uppercase; }
-.info-line { font-size: 13px; color: #555; margin: 4px 0; }
-
-.status-select-inline {
-    width: auto;
-    display: inline-block;
-    padding: 2px 20px 2px 6px;
-    margin: 0;
-    font-size: 13px;
-    font-weight: bold;
-}
-
-.tabla-productos {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-    font-size: 13px;
-}
-.tabla-productos td { padding: 6px 0; border-bottom: 1px dashed var(--border-color); }
-.td-der { text-align: right; }
-
-.btn-print-ticket {
-    width: 100%;
-    margin-top: 15px;
-    padding: 10px;
-    background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-/* =========================================================
-   REGLAS DE IMPRESIÓN COPIADAS FIELMENTE DE LA FOTO
-   ========================================================= */
-.print-only { display: none; }
-
-@media print {
-    .no-print { display: none !important; }
-    .print-only { display: block !important; }
-    
-    body, html {
-        background: #fff;
-        margin: 0;
-        padding: 0;
-    }
-    
-    #ticket-impresion {
-        width: 46mm; /* Espacio exacto de impresión segura */
-        margin: 0;
-        padding: 0;
-        font-family: 'Courier New', Courier, monospace !important;
-        color: #000 !important;
-        text-transform: uppercase !important;
-    }
-    
-    .t-center { text-align: center !important; }
-    
-    /* Configuración clave: Fuerza las letras gruesas en toda la hoja */
-    .txt-thick {
-        font-weight: 900 !important; 
-        font-size: 14px !important;
-        line-height: 1.2 !important;
-    }
-    
-    /* Etiquetas pequeñas idénticas a la foto */
-    .lbl-small {
-        font-size: 11px !important;
-        font-weight: 900 !important;
-        margin-top: 7px !important;
-    }
-    
-    /* Valores grandes que van debajo de cada etiqueta */
-    .value-big {
-        margin-bottom: 5px !important;
-        padding-left: 1px !important;
-    }
-    
-    .line-divider {
-        font-size: 13px !important;
-        font-weight: 900 !important;
-        text-align: center !important;
-        margin: 2px 0 !important;
-        letter-spacing: -1px !important;
-    }
-    
-    .data-group {
-        margin: 5px 0 !important;
-    }
-    
-    /* Espaciado de cada bloque de producto */
-    .block-prod-item {
-        margin-bottom: 12px !important;
-    }
+    window.print();
 }
