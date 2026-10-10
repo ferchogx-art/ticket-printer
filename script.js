@@ -1,7 +1,8 @@
-// Base de datos local (localStorage)
+// Manejo de Base de datos local (localStorage)
 let BD_TICKETS = JSON.parse(localStorage.getItem('tickets_data')) || [];
 let contadorProductos = 0;
 
+// Elementos del DOM
 const tabNuevo = document.getElementById('tab-nuevo');
 const tabGuardados = document.getElementById('tab-guardados');
 const secNuevo = document.getElementById('sec-nuevo');
@@ -14,102 +15,187 @@ const filtroFecha = document.getElementById('filtro-fecha');
 const btnLimpiarFiltro = document.getElementById('btn-limpiar-filtro');
 const ticketImpresion = document.getElementById('ticket-impresion');
 
+// Establecer fecha de hoy por defecto en el formulario
 document.getElementById('ped-fecha').value = new Date().toISOString().split('T')[0];
 
+// Cambio de Pestañas
 tabNuevo.addEventListener('click', () => switchTab(tabNuevo, secNuevo));
-tabGuardados.addEventListener('click', () => { switchTab(tabGuardados, secGuardados); renderHistorial(); });
+tabGuardados.addEventListener('click', () => {
+    switchTab(tabGuardados, secGuardados);
+    renderHistorial();
+});
 
-function switchTab(tA, sA) {
+function switchTab(tabActiva, seccionActiva) {
     [tabNuevo, tabGuardados].forEach(t => t.classList.remove('active'));
     [secNuevo, secGuardados].forEach(s => s.classList.remove('active'));
-    tA.classList.add('active'); sA.classList.add('active');
+    tabActiva.classList.add('active');
+    seccionActiva.classList.add('active');
 }
 
+// Agregar bloque de producto en el formulario
 function agregarCamposProducto(sku = '', desc = '', cant = 1) {
     contadorProductos++;
     const div = document.createElement('div');
     div.className = 'item-producto-form';
     div.id = `prod-form-${contadorProductos}`;
     div.innerHTML = `
-        <button type="button" class="btn-remove" onclick="document.getElementById('prod-form-${contadorProductos}').remove()">🗑️</button>
-        <div class="form-row"><input type="text" class="prod-sku" placeholder="SKU" value="${sku}"><input type="text" class="prod-desc" placeholder="Producto" value="${desc}"></div>
-        <div style="width:30%;"><input type="number" class="prod-cant" value="${cant}" min="1"></div>
+        <button type="button" class="btn-remove" onclick="eliminarCamposProducto(${contadorProductos})">🗑️</button>
+        <span style="font-size:12px; color:#888;">Producto</span>
+        <div class="form-row" style="margin-top:5px;">
+            <input type="text" class="prod-sku" placeholder="SKU" value="${sku}" required>
+            <input type="text" class="prod-desc" placeholder="Descripción del producto" value="${desc}" required>
+        </div>
+        <div style="width: 30%;">
+            <label style="font-size:12px; margin-bottom:4px;">Cantidad</label>
+            <input type="number" class="prod-cant" value="${cant}" min="1" required>
+        </div>
     `;
     listaProductosInput.appendChild(div);
 }
+
+function eliminarCamposProducto(id) {
+    document.getElementById(`prod-form-${id}`).remove();
+}
+
+// Inicializar con un campo de producto vacío
 btnAddProd.addEventListener('click', () => agregarCamposProducto());
-agregarCamposProducto();
+agregarCamposProducto(); 
 
+// Guardar Pedido en LocalStorage
 btnGuardar.addEventListener('click', () => {
-    const nom = document.getElementById('cli-nombre').value.trim();
-    if (!nom) return alert("Nombre obligatorio");
-    const pElements = document.querySelectorAll('.item-producto-form');
-    if (pElements.length === 0) return alert("Agrega un producto");
+    const nombre = document.getElementById('cli-nombre').value.trim();
+    if (!nombre) return alert("El nombre del cliente es obligatorio");
 
-    const prods = [];
-    pElements.forEach(el => {
-        prods.push({
+    const productosElements = document.querySelectorAll('.item-producto-form');
+    if (productosElements.length === 0) return alert("Debes agregar al menos un producto");
+
+    const productos = [];
+    let totalPiezas = 0;
+
+    productosElements.forEach(el => {
+        const cant = parseInt(el.querySelector('.prod-cant').value) || 1;
+        productos.push({
             sku: el.querySelector('.prod-sku').value.trim(),
             desc: el.querySelector('.prod-desc').value.trim(),
-            cant: parseInt(el.querySelector('.prod-cant').value) || 1
+            cant: cant
         });
+        totalPiezas += cant;
     });
 
     const ahora = new Date();
-    const timeStr = ahora.toLocaleDateString('es-MX') + ', ' + ahora.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
+    const timestampStr = ahora.toLocaleDateString('es-MX') + ', ' + ahora.toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
 
-    BD_TICKETS.unshift({
-        id: Date.now(), nombre: nom,
+    const nuevoPedido = {
+        id: Date.now(),
+        nombre: nombre,
         domicilio: document.getElementById('cli-domicilio').value.trim(),
         colonia: document.getElementById('cli-colonia').value.trim(),
         telefono: document.getElementById('cli-telefono').value.trim(),
         referencias: document.getElementById('cli-referencias').value.trim(),
         fecha: document.getElementById('ped-fecha').value,
         pago: document.getElementById('ped-pago').value,
-        productos: prods, registroTime: timeStr
-    });
+        totalPiezas: totalPiezas,
+        productos: productos,
+        registroTime: timestampStr
+    };
+
+    BD_TICKETS.unshift(nuevoPedido); 
     localStorage.setItem('tickets_data', JSON.stringify(BD_TICKETS));
-    alert("Guardado"); limpiarFormulario(); tabGuardados.click();
+
+    alert("Pedido guardado exitosamente");
+    limpiarFormulario();
+    tabGuardados.click();
 });
 
 function limpiarFormulario() {
-    ['cli-nombre','cli-domicilio','cli-colonia','cli-telefono','cli-referencias'].forEach(id=>document.getElementById(id).value='');
-    listaProductosInput.innerHTML = ''; agregarCamposProducto();
+    document.getElementById('cli-nombre').value = '';
+    document.getElementById('cli-domicilio').value = '';
+    document.getElementById('cli-colonia').value = '';
+    document.getElementById('cli-telefono').value = '';
+    document.getElementById('cli-referencias').value = '';
+    document.getElementById('ped-pago').value = 'Pendiente';
+    listaProductosInput.innerHTML = '';
+    agregarCamposProducto();
 }
 
-window.cambiarEstatusPago = function(id, est) {
-    const idx = BD_TICKETS.findIndex(t => t.id === id);
-    if (idx !== -1) { BD_TICKETS[idx].pago = est; localStorage.setItem('tickets_data', JSON.stringify(BD_TICKETS)); }
+// Cambiar estatus de pago
+window.cambiarEstatusPago = function(id, nuevoEstatus) {
+    const index = BD_TICKETS.findIndex(t => t.id === id);
+    if (index !== -1) {
+        BD_TICKETS[index].pago = nuevoEstatus;
+        localStorage.setItem('tickets_data', JSON.stringify(BD_TICKETS));
+    }
 }
 
-function renderHistorial(f = '') {
+// Renderizar Historial en Pantalla
+function renderHistorial(filtro = '') {
     historialTickets.innerHTML = '';
-    let fil = f ? BD_TICKETS.filter(t => t.fecha === f) : BD_TICKETS;
-    if (fil.length === 0) { historialTickets.innerHTML = '<p style="text-align:center;color:#999;">Vacío</p>'; return; }
+    let filtrados = BD_TICKETS;
 
-    fil.forEach(t => {
-        let rP = ''; t.productos.forEach(p => { rP += `<tr><td>${p.sku} • ${p.desc}</td><td class="td-der">x${p.cant}</td></tr>`; });
+    if (filtro) {
+        filtrados = BD_TICKETS.filter(t => t.fecha === filtro);
+    }
+
+    if (filtrados.length === 0) {
+        historialTickets.innerHTML = `<p style="text-align:center; color:#999; margin-top:20px;">No se encontraron pedidos.</p>`;
+        return;
+    }
+
+    filtrados.forEach(ticket => {
         const tarjeta = document.createElement('div');
         tarjeta.className = 'ticket-card';
+        
+        let filasProd = '';
+        ticket.productos.forEach(p => {
+            filasProd += `
+                <tr>
+                    <td>${p.sku} • ${p.desc}</td>
+                    <td class="td-der">x${p.cant}</td>
+                </tr>
+            `;
+        });
+
+        const opciones = { day: 'numeric', month: 'short' };
+        const fechaVisual = new Date(ticket.fecha + 'T00:00:00').toLocaleDateString('es-MX', opciones);
+        const colorPago = ticket.pago === 'PAGADO' ? '#2b8a3e' : (ticket.pago === 'Pendiente' ? '#e03131' : '#f59f00');
+
         tarjeta.innerHTML = `
-            <div class="ticket-header-info"><h4>${t.nombre}</h4></div>
-            <div class="info-line">📅 Entrega: ${t.fecha}</div>
-            <div class="info-line">💳 Pago: 
-                <select onchange="cambiarEstatusPago(${t.id}, this.value)">
-                    <option value="Pendiente" ${t.pago==='Pendiente'?'selected':''}>Pendiente</option>
-                    <option value="PAGADO" ${t.pago==='PAGADO'?'selected':''}>PAGADO</option>
-                    <option value="Contra Entrega" ${t.pago==='Contra Entrega'?'selected':''}>Contra Entrega</option>
+            <div class="ticket-header-info">
+                <div>
+                    <h4>${ticket.nombre}</h4>
+                    <span style="font-size:12px; color:#777;">${ticket.colonia || 'Sin Colonia'}</span>
+                </div>
+                <div class="tot-piezas">${ticket.totalPiezas} pzs</div>
+            </div>
+            ${ticket.domicilio ? `<div class="info-line">📍 ${ticket.domicilio}</div>` : ''}
+            ${ticket.telefono ? `<div class="info-line">📞 ${ticket.telefono}</div>` : ''}
+            ${ticket.referencias ? `<div class="info-line" style="font-size:11px; color:#777;">📝 Ref: ${ticket.referencias}</div>` : ''}
+            <div class="info-line">📅 Entrega: ${fechaVisual}</div>
+            <div class="info-line">
+                CNTRL: 
+                <select class="status-select-inline" style="color: ${colorPago}; border-color: ${colorPago};" onchange="cambiarEstatusPago(${ticket.id}, this.value)">
+                    <option value="Pendiente" ${ticket.pago === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                    <option value="PAGADO" ${ticket.pago === 'PAGADO' ? 'selected' : ''}>PAGADO</option>
+                    <option value="Pago contra entrega" ${ticket.pago === 'Pago contra entrega' ? 'selected' : ''}>Pago contra entrega</option>
                 </select>
             </div>
-            <table class="tabla-productos"><tbody>${rP}</tbody></table>
-            <button class="btn-print-ticket" onclick="imprimirTicket(${t.id})">🖨️ Imprimir</button>
+            
+            <table class="tabla-productos">
+                <tbody>${filasProd}</tbody>
+            </table>
+            
+            <button class="btn-print-ticket" onclick="imprimirTicket(${ticket.id})">🖨️ Imprimir Ticket</button>
         `;
         historialTickets.appendChild(tarjeta);
     });
 }
 
+// Filtros de fecha
 filtroFecha.addEventListener('change', (e) => renderHistorial(e.target.value));
-btnLimpiarFiltro.addEventListener('click', () => { filtroFecha.value = ''; renderHistorial(); });
+btnLimpiarFiltro.addEventListener('click', () => {
+    filtroFecha.value = '';
+    renderHistorial();
+});
 
 window.imprimirTicket = function(id) {
     const t = BD_TICKETS.find(x => x.id === id);
@@ -117,45 +203,61 @@ window.imprimirTicket = function(id) {
 
     let pHtml = '';
     t.productos.forEach(p => {
-        pHtml += `<div style="margin-bottom:8px;"><div>${p.sku} ${p.desc}</div><div>CANT: ${p.cant}</div></div>`;
+        pHtml += '<div style="margin-bottom:12px;">' +
+                 '<div>' + p.sku + ' ' + p.desc + '</div>' +
+                 '<div>CANT: ' + p.cant + '</div>' +
+                 '</div>';
     });
 
-    ticketImpresion.innerHTML = `
-        <div style="font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:bold;color:#000;line-height:1.3;text-transform:uppercase;">
-            <div style="text-align:center;font-size:14px;">FERNANDO MURILLO</div>
-            <div style="text-align:center;font-size:13px;margin-bottom:5px;">PAREDES</div>
-            <div style="text-align:center;letter-spacing:-1px;">======================</div>
-            <div style="text-align:center;">======</div>
+    let fechaFmt = t.fecha;
+    if (t.fecha.includes('-')) {
+        const p = t.fecha.split('-');
+        fechaFmt = p[2] + '/' + p[1] + '/' + p[0];
+    }
+
+    // Armado del HTML seguro para evitar errores de comillas
+    let htmlFinal = '<div style="font-family:\'Courier New\',Courier,monospace;font-size:13px;font-weight:bold;color:#000;line-height:1.3;text-transform:uppercase;">' +
+        '<div style="text-align:center;font-size:14px;">FERNANDO MURILLO</div>' +
+        '<div style="text-align:center;font-size:13px;margin-bottom:5px;">PAREDES</div>' +
+        '<div style="text-align:center;letter-spacing:-1px;">======================</div>' +
+        '<div style="text-align:center;">======</div>' +
+        
+        '<div style="margin:8px 0;">' +
+            '<div style="font-size:11px;margin-top:5px;">CLIENTE</div><div style="margin-bottom:4px;">' + t.nombre + '</div>';
             
-            <div style="margin:8px 0;">
-                <div style="font-size:11px;margin-top:5px;">CLIENTE</div><div>${t.nombre}</div>
-                ${t.domicilio ? `<div style="font-size:11px;margin-top:5px;">DOMICILIO</div><div>\${t.domicilio}</div>` : ''}
-                ${t.colonia ? `<div style="font-size:11px;margin-top:5px;">COL:</div><div>\${t.colonia}</div>` : ''}
-                ${t.telefono ? `<div style="font-size:11px;margin-top:5px;">TEL:</div><div>\${t.telefono}</div>` : ''}
-                ${t.referencias ? `<div style="font-size:11px;margin-top:5px;">REFERENCIAS</div><div>\${t.referencias}</div>` : ''}
-                <div style="font-size:11px;margin-top:5px;">ENTREGA:</div><div>${t.fecha}</div>
-                <div style="font-size:11px;margin-top:5px;">PAGO:</div><div>${t.pago}</div>
-            </div>
+    if (t.domicilio) { htmlFinal += '<div style="font-size:11px;margin-top:5px;">DOMICILIO</div><div style="margin-bottom:4px;">' + t.domicilio + '</div>'; }
+    if (t.colonia) { htmlFinal += '<div style="font-size:11px;margin-top:5px;">COL:</div><div style="margin-bottom:4px;">' + t.colonia + '</div>'; }
+    if (t.telefono) { htmlFinal += '<div style="font-size:11px;margin-top:5px;">TEL:</div><div style="margin-bottom:4px;">' + t.telefono + '</div>'; }
+    if (t.referencias) { htmlFinal += '<div style="font-size:11px;margin-top:5px;">REFERENCIAS</div><div style="margin-bottom:4px;">' + t.referencias + '</div>'; }
             
-            <div style="text-align:center;letter-spacing:-1px;">----------------------</div>
-            <div style="text-align:center;">======</div>
-            <div style="text-align:center;font-size:14px;">PRODUCTOS</div>
-            <div style="text-align:center;letter-spacing:-1px;">----------------------</div>
-            <div style="text-align:center;">======</div>
-            
-            <div style="margin:8px 0;">${pHtml}</div>
-            <div style="text-align:center;letter-spacing:-1px;">======================</div>
-            <div style="text-align:center;">======</div>
-            
-            <div style="text-align:center;margin-top:25px;margin-bottom:20px;">
-                <div>----------------------</div><div style="font-size:11px;">FIRMA DEL CLIENTE</div>
-            </div>
-            <div style="text-align:center;font-size:10px;text-transform:none;">Pedido registrado el<br>${t.registroTime || t.fecha}</div>
-            <br><br>
-        </div>
-    `;
+    htmlFinal += '<div style="font-size:11px;margin-top:5px;">ENTREGA:</div><div style="margin-bottom:4px;">' + fechaFmt + '</div>' +
+            '<div style="font-size:11px;margin-top:5px;">PAGO:</div><div style="margin-bottom:4px;">' + t.pago + '</div>' +
+        '</div>' +
+        
+        '<div style="text-align:center;letter-spacing:-1px;">----------------------</div>' +
+        '<div style="text-align:center;">======</div>' +
+        '<div style="text-align:center;font-size:14px;">PRODUCTOS</div>' +
+        '<div style="text-align:center;letter-spacing:-1px;">----------------------</div>' +
+        '<div style="text-align:center;">======</div>' +
+        
+        '<div style="margin:8px 0;">' + pHtml + '</div>' +
+        
+        '<div style="text-align:center;letter-spacing:-1px;">======================</div>' +
+        '<div style="text-align:center;">======</div>' +
+        
+        '<div style="text-align:center;margin-top:25px;margin-bottom:20px;">' +
+            '<div>----------------------</div>' +
+            '<div style="font-size:11px;margin-top:2px;">FIRMA DEL CLIENTE</div>' +
+        '</div>' +
+        
+        '<div style="text-align:center;font-size:11px;text-transform:none;">' +
+            'Pedido registrado el<br>' + (t.registroTime || fechaFmt) +
+        '</div>' +
+        '<br><br>' +
+    '</div>';
     
-    // TRUCO ANTICONGELAMIENTO: Espera un momento a que el navegador procese los datos antes de imprimir
+    ticketImpresion.innerHTML = htmlFinal;
+    
     setTimeout(function() {
         window.print();
     }, 300);
