@@ -37,24 +37,14 @@ function agregarCamposProducto(sku = '', desc = '', cant = 1) {
     contadorProductos++;
     const div = document.createElement('div');
     div.className = 'item-producto-form';
-    div.id = `prod-form-${contadorProductos}`;
-    div.innerHTML = `
-        <button type="button" class="btn-remove" onclick="eliminarCamposProducto(${contadorProductos})">🗑️</button>
-        <span style="font-size:12px; color:#888;">Producto</span>
-        <div class="form-row" style="margin-top:5px;">
-            <input type="text" class="prod-sku" placeholder="SKU" value="${sku}" required>
-            <input type="text" class="prod-desc" placeholder="Descripción del producto" value="${desc}" required>
-        </div>
-        <div style="width: 30%;">
-            <label style="font-size:12px; margin-bottom:4px;">Cantidad</label>
-            <input type="number" class="prod-cant" value="${cant}" min="1" required>
-        </div>
-    `;
+    div.id = 'prod-form-' + contadorProductos;
+    div.innerHTML = '<button type="button" class="btn-remove" onclick="eliminarCamposProducto(' + contadorProductos + ')">🗑️</button><span style="font-size:12px; color:#888;">Producto</span><div class="form-row" style="margin-top:5px;"><input type="text" class="prod-sku" placeholder="SKU" value="' + sku + '" required><input type="text" class="prod-desc" placeholder="Descripción del producto" value="' + desc + '" required></div><div style="width: 30%;"><label style="font-size:12px; margin-bottom:4px;">Cantidad</label><input type="number" class="prod-cant" value="' + cant + '" min="1" required></div>';
     listaProductosInput.appendChild(div);
 }
 
-function eliminarCamposProducto(id) {
-    document.getElementById(`prod-form-${id}`).remove();
+window.eliminarCamposProducto = function(id) {
+    const el = document.getElementById('prod-form-' + id);
+    if (el) el.remove();
 }
 
 // Inicializar con un campo de producto vacío
@@ -64,10 +54,10 @@ agregarCamposProducto();
 // Guardar Pedido en LocalStorage
 btnGuardar.addEventListener('click', () => {
     const nombre = document.getElementById('cli-nombre').value.trim();
-    if (!nombre) return alert("El nombre del cliente es obligatorio");
+    if (!nombre) return alert('El nombre del cliente es obligatorio');
 
     const productosElements = document.querySelectorAll('.item-producto-form');
-    if (productosElements.length === 0) return alert("Debes agregar al menos un producto");
+    if (productosElements.length === 0) return alert('Debes agregar al menos un producto');
 
     const productos = [];
     let totalPiezas = 0;
@@ -102,7 +92,7 @@ btnGuardar.addEventListener('click', () => {
     BD_TICKETS.unshift(nuevoPedido); 
     localStorage.setItem('tickets_data', JSON.stringify(BD_TICKETS));
 
-    alert("Pedido guardado exitosamente");
+    alert('Pedido guardado exitosamente');
     limpiarFormulario();
     tabGuardados.click();
 });
@@ -127,7 +117,7 @@ window.cambiarEstatusPago = function(id, nuevoEstatus) {
     }
 }
 
-// Renderizar Historial en Pantalla
+// Renderizar Historial en Pantalla CORREGIDO (Sin etiquetas rotas en tarjeta)
 function renderHistorial(filtro = '') {
     historialTickets.innerHTML = '';
     let filtrados = BD_TICKETS;
@@ -137,7 +127,7 @@ function renderHistorial(filtro = '') {
     }
 
     if (filtrados.length === 0) {
-        historialTickets.innerHTML = `<p style="text-align:center; color:#999; margin-top:20px;">No se encontraron pedidos.</p>`;
+        historialTickets.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px;">No se encontraron pedidos.</p>';
         return;
     }
 
@@ -147,45 +137,22 @@ function renderHistorial(filtro = '') {
         
         let filasProd = '';
         ticket.productos.forEach(p => {
-            filasProd += `
-                <tr>
-                    <td>${p.sku} • ${p.desc}</td>
-                    <td class="td-der">x${p.cant}</td>
-                </tr>
-            `;
+            filasProd += '<tr><td>' + p.sku + ' • ' + p.desc + '</td><td class="td-der">x' + p.cant + '</td></tr>';
         });
 
         const opciones = { day: 'numeric', month: 'short' };
         const fechaVisual = new Date(ticket.fecha + 'T00:00:00').toLocaleDateString('es-MX', opciones);
         const colorPago = ticket.pago === 'PAGADO' ? '#2b8a3e' : (ticket.pago === 'Pendiente' ? '#e03131' : '#f59f00');
 
-        tarjeta.innerHTML = `
-            <div class="ticket-header-info">
-                <div>
-                    <h4>${ticket.nombre}</h4>
-                    <span style="font-size:12px; color:#777;">${ticket.colonia || 'Sin Colonia'}</span>
-                </div>
-                <div class="tot-piezas">${ticket.totalPiezas} pzs</div>
-            </div>
-            ${ticket.domicilio ? `<div class="info-line">📍 ${ticket.domicilio}</div>` : ''}
-            ${ticket.telefono ? `<div class="info-line">📞 ${ticket.telefono}</div>` : ''}
-            ${ticket.referencias ? `<div class="info-line" style="font-size:11px; color:#777;">📝 Ref: ${ticket.referencias}</div>` : ''}
-            <div class="info-line">📅 Entrega: ${fechaVisual}</div>
-            <div class="info-line">
-                CNTRL: 
-                <select class="status-select-inline" style="color: ${colorPago}; border-color: ${colorPago};" onchange="cambiarEstatusPago(${ticket.id}, this.value)">
-                    <option value="Pendiente" ${ticket.pago === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                    <option value="PAGADO" ${ticket.pago === 'PAGADO' ? 'selected' : ''}>PAGADO</option>
-                    <option value="Pago contra entrega" ${ticket.pago === 'Pago contra entrega' ? 'selected' : ''}>Pago contra entrega</option>
-                </select>
-            </div>
-            
-            <table class="tabla-productos">
-                <tbody>${filasProd}</tbody>
-            </table>
-            
-            <button class="btn-print-ticket" onclick="imprimirTicket(${ticket.id})">🖨️ Imprimir Ticket</button>
-        `;
+        let htmlTarjeta = '<div class="ticket-header-info"><div><h4>' + ticket.nombre + '</h4><span style="font-size:12px; color:#777;">' + (ticket.colonia || 'Sin Colonia') + '</span></div><div class="tot-piezas">' + ticket.totalPiezas + ' pzs</div></div>';
+        
+        if (ticket.domicilio) { htmlTarjeta += '<div class="info-line">📍 ' + ticket.domicilio + '</div>'; }
+        if (ticket.telefono) { htmlTarjeta += '<div class="info-line">📞 ' + ticket.telefono + '</div>'; }
+        if (ticket.referencias) { htmlTarjeta += '<div class="info-line" style="font-size:11px; color:#777;">📝 Ref: ' + ticket.referencias + '</div>'; }
+        
+        htmlTarjeta += '<div class="info-line">📅 Entrega: ' + fechaVisual + '</div><div class="info-line">CNTRL: <select class="status-select-inline" style="color: ' + colorPago + '; border-color: ' + colorPago + ';" onchange="cambiarEstatusPago(' + ticket.id + ', this.value)"><option value="Pendiente" ' + (ticket.pago === 'Pendiente' ? 'selected' : '') + '>Pendiente</option><option value="PAGADO" ' + (ticket.pago === 'PAGADO' ? 'selected' : '') + '>PAGADO</option><option value="Pago contra entrega" ' + (ticket.pago === 'Pago contra entrega' ? 'selected' : '') + '>Pago contra entrega</option></select></div><table class="tabla-productos"><tbody>' + filasProd + '</tbody></table><button class="btn-print-ticket" onclick="imprimirTicket(' + ticket.id + ')">🖨️ Imprimir Ticket</button>';
+        
+        tarjeta.innerHTML = htmlTarjeta;
         historialTickets.appendChild(tarjeta);
     });
 }
@@ -197,68 +164,71 @@ btnLimpiarFiltro.addEventListener('click', () => {
     renderHistorial();
 });
 
+// Acción de Impresión Física EXACTA y Segura sin fallas de comillas
 window.imprimirTicket = function(id) {
-    const t = BD_TICKETS.find(x => x.id === id);
-    if (!t) return;
+    const ticket = BD_TICKETS.find(x => x.id === id);
+    if (!ticket) return;
 
-    let pHtml = '';
-    t.productos.forEach(p => {
-        pHtml += '<div style="margin-bottom:12px;">' +
-                 '<div>' + p.sku + ' ' + p.desc + '</div>' +
-                 '<div>CANT: ' + p.cant + '</div>' +
-                 '</div>';
+    let listaProductosEstructural = '';
+    ticket.productos.forEach((p, index) => {
+        listaProductosEstructural += '<div style="margin-bottom: 8px;"><div>' + p.sku + ' ' + p.desc + '</div><div>CANT: ' + p.cant + '</div>' + (index < ticket.productos.length - 1 ? '<div style="border-top:1px dashed #000; margin: 4px 0; width:100%;"></div>' : '') + '</div>';
     });
 
-    let fechaFmt = t.fecha;
-    if (t.fecha.includes('-')) {
-        const p = t.fecha.split('-');
-        fechaFmt = p[2] + '/' + p[1] + '/' + p[0];
+    let fechaFormateada = ticket.fecha;
+    if (ticket.fecha && ticket.fecha.includes('-')) {
+        const partes = ticket.fecha.split('-');
+        fechaFormateada = partes[2] + '/' + partes[1] + '/' + partes[0];
     }
 
-    // Armado del HTML seguro para evitar errores de comillas
-    let htmlFinal = '<div style="font-family:\'Courier New\',Courier,monospace;font-size:13px;font-weight:bold;color:#000;line-height:1.3;text-transform:uppercase;">' +
-        '<div style="text-align:center;font-size:14px;">FERNANDO MURILLO</div>' +
-        '<div style="text-align:center;font-size:13px;margin-bottom:5px;">PAREDES</div>' +
-        '<div style="text-align:center;letter-spacing:-1px;">======================</div>' +
-        '<div style="text-align:center;">======</div>' +
-        
-        '<div style="margin:8px 0;">' +
-            '<div style="font-size:11px;margin-top:5px;">CLIENTE</div><div style="margin-bottom:4px;">' + t.nombre + '</div>';
-            
-    if (t.domicilio) { htmlFinal += '<div style="font-size:11px;margin-top:5px;">DOMICILIO</div><div style="margin-bottom:4px;">' + t.domicilio + '</div>'; }
-    if (t.colonia) { htmlFinal += '<div style="font-size:11px;margin-top:5px;">COL:</div><div style="margin-bottom:4px;">' + t.colonia + '</div>'; }
-    if (t.telefono) { htmlFinal += '<div style="font-size:11px;margin-top:5px;">TEL:</div><div style="margin-bottom:4px;">' + t.telefono + '</div>'; }
-    if (t.referencias) { htmlFinal += '<div style="font-size:11px;margin-top:5px;">REFERENCIAS</div><div style="margin-bottom:4px;">' + t.referencias + '</div>'; }
-            
-    htmlFinal += '<div style="font-size:11px;margin-top:5px;">ENTREGA:</div><div style="margin-bottom:4px;">' + fechaFmt + '</div>' +
-            '<div style="font-size:11px;margin-top:5px;">PAGO:</div><div style="margin-bottom:4px;">' + t.pago + '</div>' +
-        '</div>' +
-        
-        '<div style="text-align:center;letter-spacing:-1px;">----------------------</div>' +
-        '<div style="text-align:center;">======</div>' +
-        '<div style="text-align:center;font-size:14px;">PRODUCTOS</div>' +
-        '<div style="text-align:center;letter-spacing:-1px;">----------------------</div>' +
-        '<div style="text-align:center;">======</div>' +
-        
-        '<div style="margin:8px 0;">' + pHtml + '</div>' +
-        
-        '<div style="text-align:center;letter-spacing:-1px;">======================</div>' +
-        '<div style="text-align:center;">======</div>' +
-        
-        '<div style="text-align:center;margin-top:25px;margin-bottom:20px;">' +
-            '<div>----------------------</div>' +
-            '<div style="font-size:11px;margin-top:2px;">FIRMA DEL CLIENTE</div>' +
-        '</div>' +
-        
-        '<div style="text-align:center;font-size:11px;text-transform:none;">' +
-            'Pedido registrado el<br>' + (t.registroTime || fechaFmt) +
-        '</div>' +
-        '<br><br>' +
-    '</div>';
-    
-    ticketImpresion.innerHTML = htmlFinal;
-    
-    setTimeout(function() {
-        window.print();
-    }, 300);
+    let htmlFinal = '<div style="font-family: \'Courier New\', Courier, monospace; font-size: 13px; font-weight: bold; color: #000; line-height: 1.3; text-transform: uppercase;">' +
+        '<div style="text-align: center; font-size: 15px; margin-bottom: 2px;">FERNANDO MURILLO</div>' +
+        '<div style="text-align: center; font-size: 13px; margin-bottom: 6px;">PAREDES</div>' +
+        '<div style="text-align: center; font-size: 14px; margin-bottom: 2px;">PEDIDO</div>' +
+        '<div style="text-align: center; letter-spacing: -1px; margin: 2px 0;">======================</div>' +
+        '<div style="text-align: center; margin: 2px 0;">======</div>' +
+        '<div style="margin: 8px 0;">' +
+        '<div style="font-size: 11px; margin-top: 4px;">CLIENTE</div>' +
+        '<div style="margin-bottom: 4px; padding-left: 2px;">' + ticket.nombre + '</div>';
+
+    if (ticket.domicilio) {
+        htmlFinal += '<div style="font-size: 11px; margin-top: 4px;">DOMICILIO</div><div style="margin-bottom: 4px; padding-left: 2px;">' + ticket.domicilio + '</div>';
+    }
+    if (ticket.colonia) {
+htmlFinal += 'COL:' + ticket.colonia + '';
+}
+if (ticket.telefono) {
+htmlFinal += 'TEL:' + ticket.telefono + '';
+}
+if (ticket.referencias) {
+htmlFinal += 'REFERENCIAS' + ticket.referencias + '';
+}
+htmlFinal += 'ENTREGA:' + fechaFormateada + '' +
+'PAGO:' + ticket.pago + '' +
+'' +
+'----------------------' +
+'======' +
+'PRODUCTOS' +
+'----------------------' +
+'======' +
+'' + listaProductosEstructural + '' +
+'======================' +
+'======' +
+'
+' +
+'' +
+'----------------------' +
+'FIRMA DEL CLIENTE' +
+'' +
+'' +
+'Pedido registrado el
+' + (ticket.registroTime || fechaFormateada) +
+'' +
+'
+
+' +
+'';
+ticketImpresion.innerHTML = htmlFinal;
+setTimeout(function() {
+window.print();
+}, 250);
 }
