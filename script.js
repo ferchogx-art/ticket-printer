@@ -218,7 +218,7 @@ window.imprimirTicket = function(id) {
     ticketImpresion.innerHTML = `
         <div class="ticket-print-layout">
             <div style="text-align: center; margin-bottom: 5px;">
-                <div style="font-size: 14px; font-weight: 900;">FERNANDO MURILLO</div>
+                <div style="font-size: 14px; font-weight: 900;">FESTER</div>
                 <div style="font-size: 12px; font-weight: 700;">PAREDES</div>
             </div>
             <div class="divider"></div>
