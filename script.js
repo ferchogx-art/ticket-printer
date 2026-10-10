@@ -214,7 +214,6 @@ window.imprimirTicket = function(id) {
         `;
     });
 
-    // Formato estructurado original nítido
     ticketImpresion.innerHTML = `
         <div class="ticket-print-layout">
             <div style="text-align: center; margin-bottom: 5px;">
@@ -226,7 +225,7 @@ window.imprimirTicket = function(id) {
             <p style="text-align: center; font-size: 11px; font-weight: 700;">${ticket.colonia ? ticket.colonia.toUpperCase() : ''}</p>
             <div class="divider"></div>
             ${ticket.domicilio ? `<p style="font-size: 11px;"><strong>DOM:</strong> ${ticket.domicilio}</p>` : ''}
-${ticket.telefono ? <p style="font-size: 11px;"><strong>TEL:</strong> ${ticket.telefono}</p> : ''}
+            ${ticket.telefono ? `<p style="font-size: 11px;"><strong>TEL:</strong> ${ticket.telefono}</p>` : ''}
 ${ticket.referencias ? <p style="font-size: 11px;"><strong>REF:</strong> ${ticket.referencias}</p> : ''}
 ENTREGA: ${ticket.fecha}
 PAGO: ${ticket.pago.toUpperCase()}
