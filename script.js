@@ -266,4 +266,4 @@ ticketImpresion.innerHTML = htmlFinal;
 setTimeout(function() {
 window.print();
 }, 250);
-};
+}
