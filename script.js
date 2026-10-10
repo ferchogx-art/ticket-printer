@@ -95,12 +95,10 @@ btnGuardar.addEventListener('click', () => {
         productos: productos
     };
 
-    BD_TICKETS.unshift(nuevoPedido); // Agregar al inicio
+    BD_TICKETS.unshift(nuevoPedido);
     localStorage.setItem('tickets_data', JSON.stringify(BD_TICKETS));
 
     alert("Pedido guardado exitosamente");
-    
-    // Limpiar formulario e ir a la lista de guardados
     limpiarFormulario();
     tabGuardados.click();
 });
@@ -114,6 +112,16 @@ function limpiarFormulario() {
     document.getElementById('ped-pago').value = 'Pendiente';
     listaProductosInput.innerHTML = '';
     agregarCamposProducto();
+}
+
+// Cambiar estatus de pago desde la tarjeta guardada
+window.cambiarEstatusPago = function(id, nuevoEstatus) {
+    const index = BD_TICKETS.findIndex(t => t.id === id);
+    if (index !== -1) {
+        BD_TICKETS[index].pago = nuevoEstatus;
+        localStorage.setItem('tickets_data', JSON.stringify(BD_TICKETS));
+        renderHistorial(filtroFecha.value);
+    }
 }
 
 // Renderizar Historial en Pantalla
@@ -138,15 +146,19 @@ function renderHistorial(filtro = '') {
         ticket.productos.forEach(p => {
             filasProd += `
                 <tr>
-                    <td>${p.sku} • ${p.desc}</td>
+                    <td><strong>${p.sku}</strong> • ${p.desc}</td>
                     <td class="td-der">x${p.cant}</td>
                 </tr>
             `;
         });
 
-        // Formatear Fecha visual corta (ej: 10-oct)
         const opciones = { day: 'numeric', month: 'short' };
         const fechaVisual = new Date(ticket.fecha + 'T00:00:00').toLocaleDateString('es-MX', opciones);
+
+        // Estilos de colores dinámicos para la pantalla
+        let colorPago = '#e03131'; 
+        if(ticket.pago === 'PAGADO') colorPago = '#2b8a3e';
+        if(ticket.pago === 'Contra Entrega') colorPago = '#f59f00';
 
         tarjeta.innerHTML = `
             <div class="ticket-header-info">
@@ -154,12 +166,20 @@ function renderHistorial(filtro = '') {
                     <h4>${ticket.nombre}</h4>
                     <span style="font-size:12px; color:#777;">${ticket.colonia || 'Sin Colonia'}</span>
                 </div>
-                <div class="tot-piezas">${ticket.totalPiezas} pzs</div>
+                <div class="tot-piezas"><strong>${ticket.totalPiezas} pzs</strong></div>
             </div>
-            ${ticket.domicilio ? `<div class="info-line">📍 \${ticket.domicilio}</div>` : ''}
-            ${ticket.telefono ? `<div class="info-line">📞 \${ticket.telefono}</div>` : ''}
+            ${ticket.domicilio ? `<div class="info-line">📍 ${ticket.domicilio}</div>` : ''}
+            ${ticket.telefono ? `<div class="info-line">📞 ${ticket.telefono}</div>` : ''}
             <div class="info-line">📅 Entrega: ${fechaVisual}</div>
-            <div class="info-line">💳 Pago: <strong style="color:${ticket.pago === 'PAGADO' ? '#2b8a3e' : '#e03131'}">${ticket.pago}</strong></div>
+            
+            <div class="info-line" style="margin-top: 8px;">
+                <span>💳 Pago:</span>
+                <select class="select-pago-historial" onchange="cambiarEstatusPago(${ticket.id}, this.value)" style="color:${colorPago}; font-weight:bold; margin:0; padding:4px 8px; width:auto; display:inline-block; height:auto;">
+                    <option value="Pendiente" ${ticket.pago === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
+                    <option value="PAGADO" ${ticket.pago === 'PAGADO' ? 'selected' : ''}>PAGADO</option>
+                    <option value="Contra Entrega" ${ticket.pago === 'Contra Entrega' ? 'selected' : ''}>Contra Entrega</option>
+                </select>
+            </div>
             
             <table class="tabla-productos">
                 <tbody>${filasProd}</tbody>
@@ -178,8 +198,8 @@ btnLimpiarFiltro.addEventListener('click', () => {
     renderHistorial();
 });
 
-// Acción de Impresión Física
-function imprimirTicket(id) {
+// Acción de Impresión Física (Corregido y con fuentes negritas/grandes para 58mm)
+window.imprimirTicket = function(id) {
     const ticket = BD_TICKETS.find(t => t.id === id);
     if (!ticket) return;
 
@@ -187,34 +207,25 @@ function imprimirTicket(id) {
     ticket.productos.forEach(p => {
         filasProductos += `
             <tr>
-                <td>${p.sku}<br>${p.desc}</td>
-                <td style="text-align: right; width: 40px;">x${p.cant}</td>
+                <td style="padding: 3px 0;"><strong>${p.sku}</strong><br>${p.desc}</td>
+                <td style="text-align: right; width: 45px; padding: 3px 0; font-size: 13px;"><strong>x${p.cant}</strong></td>
             </tr>
         `;
     });
 
-    // Formato exacto limpio y minimalista para el papel térmico
     ticketImpresion.innerHTML = `
         <div class="ticket-print-layout">
-            <h2>${ticket.nombre}</h2>
-            <p style="text-align: center;">${ticket.colonia ? ticket.colonia.toUpperCase() : ''}</p>
+            <h2 style="font-size: 14px; font-weight: 900; margin-bottom: 2px;">${ticket.nombre}</h2>
+            <p style="text-align: center; font-size: 11px; font-weight: 700;">${ticket.colonia ? ticket.colonia.toUpperCase() : ''}</p>
             <div class="divider"></div>
-            ${ticket.domicilio ? `<p>DOM: \${ticket.domicilio}</p>` : ''}
-            ${ticket.telefono ? `<p>TEL: \${ticket.telefono}</p>` : ''}
-            <p>ENTREGA: ${ticket.fecha}</p>
-            <p>PAGO: ${ticket.pago}</p>
+            ${ticket.domicilio ? `<p style="font-size: 11px;"><strong>DOM:</strong> ${ticket.domicilio}</p>` : ''}
+            ${ticket.telefono ? `<p style="font-size: 11px;"><strong>TEL:</strong> ${ticket.telefono}</p>` : ''}
+            <p style="font-size: 11px;"><strong>ENTREGA:</strong> ${ticket.fecha}</p>
+            <p style="font-size: 11px;"><strong>PAGO:</strong> ${ticket.pago.toUpperCase()}</p>
             <div class="divider"></div>
             <table class="table-print">
                 <tbody>${filasProductos}</tbody>
             </table>
             <div class="divider"></div>
-            <p style="text-align: right; font-weight: bold;">TOTAL ARTÍCULOS: ${ticket.totalPiezas}</p>
+            <p style="text-align: right; font-size: 12px; font-weight: 900; margin-top: 5px;">TOTAL ARTÍCULOS: ${ticket.totalPiezas}</p>
             <br>
-            <p style="text-align: center; font-size: 9px;">Gracias por su preferencia</p>
-            <br><br>
-        </div>
-    `;
-
-    // Ejecuta el driver de impresión nativo del dispositivo
-    window.print();
-}
