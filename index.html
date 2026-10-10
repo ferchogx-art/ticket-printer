@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Pedidos y Tickets</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- INTERFAZ DE LA APP (Se oculta al imprimir) -->
+    <div class="app-container no-print">
+        <header>
+            <button id="tab-nuevo" class="tab-btn active">+ Nuevo</button>
+            <button id="tab-guardados" class="tab-btn">📋 Guardados</button>
+        </header>
+
+        <main>
+            <!-- SECCIÓN NUEVO PEDIDO -->
+            <section id="sec-nuevo" class="tab-content active">
+                <div class="form-section">
+                    <h3>Captura los datos del pedido</h3>
+                    <label>Datos del cliente</label>
+                    <input type="text" id="cli-nombre" placeholder="Nombre completo *" required>
+                    <input type="text" id="cli-domicilio" placeholder="Domicilio (Calle, número)">
+                    <div class="form-row">
+                        <input type="text" id="cli-colonia" placeholder="Colonia">
+                        <input type="tel" id="cli-telefono" placeholder="Teléfono">
+                    </div>
+                    <textarea id="cli-referencias" placeholder="Referencias de ubicación" rows="2"></textarea>
+                    
+                    <div class="form-row">
+                        <div>
+                            <label>Fecha de entrega</label>
+                            <input type="date" id="ped-fecha">
+                        </div>
+                        <div>
+                            <label>Estatus de pago</label>
+                            <select id="ped-pago">
+                                <option value="Pendiente">Pendiente</option>
+                                <option value="PAGADO">PAGADO</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="section-header">
+                        <label>Productos</label>
+                        <button type="button" id="btn-add-prod" class="btn-secondary">+ Agregar</button>
+                    </div>
+                    <div id="lista-productos-input">
+                        <!-- Los productos dinámicos se insertan aquí -->
+                    </div>
+                </div>
+
+                <button id="btn-guardar" class="btn-primary">💾 Guardar pedido</button>
+            </section>
+
+            <!-- SECCIÓN HISTORIAL / GUARDADOS -->
+            <section id="sec-guardados" class="tab-content">
+                <div class="filter-bar">
+                    <label for="filtro-fecha">Filtrar por fecha:</label>
+                    <input type="date" id="filtro-fecha">
+                    <button id="btn-limpiar-filtro" class="btn-secondary">Mostrar todos</button>
+                </div>
+                <div id="historial-tickets" class="grid-historial">
+                    <!-- Los tickets guardados aparecerán aquí -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- CONTENEDOR EXCLUSIVO PARA IMPRESIÓN (Invisible en pantalla) -->
+    <div id="ticket-impresion" class="print-only"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
