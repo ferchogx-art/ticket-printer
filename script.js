@@ -82,10 +82,6 @@ btnGuardar.addEventListener('click', () => {
         totalPiezas += cant;
     });
 
-    // Formatear estampa de tiempo exacta de guardado
-    const ahora = new Date();
-    const timestampStr = ahora.toLocaleDateString('es-MX') + ', ' + ahora.toLocaleTimeString('es-MX', {hour: '2-digit', minute:'2-digit', second:'2-digit'});
-
     const nuevoPedido = {
         id: Date.now(),
         nombre: nombre,
@@ -96,15 +92,15 @@ btnGuardar.addEventListener('click', () => {
         fecha: document.getElementById('ped-fecha').value,
         pago: document.getElementById('ped-pago').value,
         totalPiezas: totalPiezas,
-        productos: productos,
-        registroTime: timestampStr
+        productos: productos
     };
 
-    BD_TICKETS.unshift(nuevoPedido); 
+    BD_TICKETS.unshift(nuevoPedido); // Agregar al inicio
     localStorage.setItem('tickets_data', JSON.stringify(BD_TICKETS));
 
     alert("Pedido guardado exitosamente");
     
+    // Limpiar formulario e ir a la lista de guardados
     limpiarFormulario();
     tabGuardados.click();
 });
@@ -118,15 +114,6 @@ function limpiarFormulario() {
     document.getElementById('ped-pago').value = 'Pendiente';
     listaProductosInput.innerHTML = '';
     agregarCamposProducto();
-}
-
-// Cambiar estatus de pago directamente desde el historial
-function cambiarEstatusPago(id, nuevoEstatus) {
-    const index = BD_TICKETS.findIndex(t => t.id === id);
-    if (index !== -1) {
-        BD_TICKETS[index].pago = nuevoEstatus;
-        localStorage.setItem('tickets_data', JSON.stringify(BD_TICKETS));
-    }
 }
 
 // Renderizar Historial en Pantalla
@@ -157,9 +144,9 @@ function renderHistorial(filtro = '') {
             `;
         });
 
+        // Formatear Fecha visual corta (ej: 10-oct)
         const opciones = { day: 'numeric', month: 'short' };
         const fechaVisual = new Date(ticket.fecha + 'T00:00:00').toLocaleDateString('es-MX', opciones);
-        const colorPago = ticket.pago === 'PAGADO' ? '#2b8a3e' : (ticket.pago === 'Pendiente' ? '#e03131' : '#f59f00');
 
         tarjeta.innerHTML = `
             <div class="ticket-header-info">
@@ -169,18 +156,10 @@ function renderHistorial(filtro = '') {
                 </div>
                 <div class="tot-piezas">${ticket.totalPiezas} pzs</div>
             </div>
-            ${ticket.domicilio ? `<div class="info-line">📍 ${ticket.domicilio}</div>` : ''}
-            ${ticket.telefono ? `<div class="info-line">📞 ${ticket.telefono}</div>` : ''}
-            ${ticket.referencias ? `<div class="info-line" style="font-size:11px; color:#777;">📝 Ref: ${ticket.referencias}</div>` : ''}
+            ${ticket.domicilio ? `<div class="info-line">📍 \${ticket.domicilio}</div>` : ''}
+            ${ticket.telefono ? `<div class="info-line">📞 \${ticket.telefono}</div>` : ''}
             <div class="info-line">📅 Entrega: ${fechaVisual}</div>
-            <div class="info-line">
-                CNTRL: 
-                <select class="status-select-inline" style="color: ${colorPago}; border-color: ${colorPago};" onchange="cambiarEstatusPago(${ticket.id}, this.value); this.style.color = this.value === 'PAGADO' ? '#2b8a3e' : (this.value === 'Pendiente' ? '#e03131' : '#f59f00'); this.style.borderColor = this.style.color;">
-                    <option value="Pendiente" ${ticket.pago === 'Pendiente' ? 'selected' : ''}>Pendiente</option>
-                    <option value="PAGADO" ${ticket.pago === 'PAGADO' ? 'selected' : ''}>PAGADO</option>
-                    <option value="Pago contra entrega" ${ticket.pago === 'Pago contra entrega' ? 'selected' : ''}>Pago contra entrega</option>
-                </select>
-            </div>
+            <div class="info-line">💳 Pago: <strong style="color:${ticket.pago === 'PAGADO' ? '#2b8a3e' : '#e03131'}">${ticket.pago}</strong></div>
             
             <table class="tabla-productos">
                 <tbody>${filasProd}</tbody>
@@ -199,67 +178,43 @@ btnLimpiarFiltro.addEventListener('click', () => {
     renderHistorial();
 });
 
-// Acción de Impresión Física Estilo Imagen 2 Exclusivo
+// Acción de Impresión Física
 function imprimirTicket(id) {
     const ticket = BD_TICKETS.find(t => t.id === id);
     if (!ticket) return;
 
-    // Generar formato de productos estructurado en bloques nítidos
-    let bloquesProductos = '';
+    let filasProductos = '';
     ticket.productos.forEach(p => {
-        bloquesProductos += `
-            <div class="prod-block-print">
-                <div>${p.sku} ${p.desc}</div>
-                <div>CANT: ${p.cant}</div>
-            </div>
+        filasProductos += `
+            <tr>
+                <td>${p.sku}<br>${p.desc}</td>
+                <td style="text-align: right; width: 40px;">x${p.cant}</td>
+            </tr>
         `;
     });
 
-    // Formatear Fecha en formato DD/MM/AAAA para la cabecera
-    const parts = ticket.fecha.split('-');
-    const fechaEspanol = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : ticket.fecha;
-
-    // Construcción del documento final idéntico al ejemplo físico
+    // Formato exacto limpio y minimalista para el papel térmico
     ticketImpresion.innerHTML = `
-        <div class="t-center t-title">PEDIDO</div>
-        <div class="char-divider">======================</div>
-        <div class="t-center text-sub">======</div>
-        
-        <div class="ticket-section-data">
-            <span class="ticket-label">CLIENTE</span>
-            <span class="ticket-value">${ticket.nombre}</span>
-            
-            ${ticket.domicilio ? `
-                <span class="ticket-label">DOMICILIO</span>
-                <span class="ticket-value">${ticket.domicilio}</span>
-            ` : ''}
-            
-            ${ticket.colonia ? `
-                <span class="ticket-label">COL:</span>
-${ticket.colonia}
-` : ''}
-${ticket.telefono ? <span class="ticket-label">TEL:</span> <span class="ticket-value">${ticket.telefono}</span> : ''}
-${ticket.referencias ? <span class="ticket-label">REFERENCIAS</span> <span class="ticket-value">${ticket.referencias}</span> : ''}
-ENTREGA:
-${fechaEspanol}
-PAGO:
-${ticket.pago}
-----------------------
-======
-PRODUCTOS
-----------------------
-======
-${bloquesProductos}
-======================
-======
-----------------------
-FIRMA DEL CLIENTE
-Pedido registrado el
-${ticket.registroTime || fechaEspanol}
+        <div class="ticket-print-layout">
+            <h2>${ticket.nombre}</h2>
+            <p style="text-align: center;">${ticket.colonia ? ticket.colonia.toUpperCase() : ''}</p>
+            <div class="divider"></div>
+            ${ticket.domicilio ? `<p>DOM: \${ticket.domicilio}</p>` : ''}
+            ${ticket.telefono ? `<p>TEL: \${ticket.telefono}</p>` : ''}
+            <p>ENTREGA: ${ticket.fecha}</p>
+            <p>PAGO: ${ticket.pago}</p>
+            <div class="divider"></div>
+            <table class="table-print">
+                <tbody>${filasProductos}</tbody>
+            </table>
+            <div class="divider"></div>
+            <p style="text-align: right; font-weight: bold;">TOTAL ARTÍCULOS: ${ticket.totalPiezas}</p>
+            <br>
+            <p style="text-align: center; font-size: 9px;">Gracias por su preferencia</p>
+            <br><br>
+        </div>
+    `;
 
-
-
-
-`;
-window.print();
+    // Ejecuta el driver de impresión nativo del dispositivo
+    window.print();
 }
