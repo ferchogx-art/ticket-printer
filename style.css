@@ -200,20 +200,19 @@ input, select, textarea {
         padding: 0;
     }
     
-    /* Configuración de ticket de 58mm térmico */
     #ticket-impresion {
-        width: 52mm; /* Margen seguro para rollo de 58mm */
+        width: 52mm;
         margin: 0;
-        padding: 0 2mm;
-        font-family: 'Courier New', Courier, monospace; /* Fuente clásica de ticket */
-        font-size: 11px;
+        padding: 0 1mm;
+        font-family: 'Courier New', Courier, monospace;
         color: #000;
+        font-weight: 700; /* Hace que todo el texto sea negrita */
     }
     
-    .ticket-print-layout h2 { font-size: 14px; text-align: center; margin: 5px 0; text-transform: uppercase; }
-    .ticket-print-layout p { margin: 3px 0; line-height: 1.2; }
-    .divider { border-top: 1px dashed #000; margin: 8px 0; }
+    .ticket-print-layout h2 { font-size: 14px; text-align: center; margin: 5px 0; font-weight: 900; }
+    .ticket-print-layout p { margin: 4px 0; line-height: 1.2; font-weight: 700; }
+    .divider { border-top: 2px dashed #000; margin: 8px 0; } /* Línea divisoria más marcada */
     
-    .table-print { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .table-print { width: 100%; border-collapse: collapse; font-size: 11px; font-weight: 700; }
     .table-print td { padding: 4px 0; vertical-align: top; }
 }
