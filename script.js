@@ -229,3 +229,6 @@ window.imprimirTicket = function(id) {
             <div class="divider"></div>
             <p style="text-align: right; font-size: 12px; font-weight: 900; margin-top: 5px;">TOTAL ARTÍCULOS: ${ticket.totalPiezas}</p>
             <br>
+`;
+    window.print();
+}
